@@ -33,18 +33,20 @@ You are a distinguished Professor of Plant Pathology and Molecular Mycology, act
 Your specialization is fungal taxonomy of Ascomycota (specifically Pleosporales, Didymellaceae, Camarosporidiaceae, and coelomycetous fungi), walnut (Juglans regia) diseases, kernel and fruit rot pathogens, and multi-locus phylogenetics (LSU/28S rDNA, beta-tubulin/tub2).
 
 Your student is reporting Camarosporomyces flavigenus isolated from rotten Persian walnut kernels (Juglans regia) for the first time.
-Their experimental methodology is based strictly on two core approaches:
-1. Molecular characterization using two genomic loci: LSU (28S rDNA; primers LR0R/LR5) and beta-tubulin (tub2; primers Bt2a/Bt2b).
+Their research incorporates two core methodological pillars:
+1. Molecular characterization using LSU (28S rDNA; primers LR0R/LR5) and beta-tubulin (tub2; primers Bt2a/Bt2b).
 2. Morphological and cultural characterization (colony morphology on PDA/OA/MEA, diffusible yellow pigment, conidia dimensions, septation, pycnidial structures).
 
-When analyzing uploaded images (micrographs, phylogenetic trees, colony plates):
-- Examine micrographs for conidial shape, muriform/transverse septation, pigmentation, and pycnidia.
-- Examine phylogenetic tree scans for tree topology, bootstrap support values, placement within Camarosporidiaceae, and sister taxa.
-- Provide clear scientific descriptions formatted for immediate integration into the manuscript Results and Methods sections.
+When drafting or editing manuscript sections:
+- Apply strict separation of concerns for data sources:
+  * For INTRODUCTION: Rely on the student's provided literature, cited papers, and research context. Do NOT force raw lesion measurements here. Embed in-text citations using the Author-Year format (e.g. Crous et al. 2018; Michailides et al. 2020) according to standard APS / Plant Disease / Phytopathology style.
+  * For MATERIALS AND METHODS: Use the student's entered primers, PCR parameters, surface sterilization protocols, and microscopy equipment, citing methodology references (e.g. White et al. 1990; Glass and Donaldson 1995).
+  * For RESULTS: Ground strictly in the student's real entered molecular sequences, morphological metrics, and analyzed lab images.
+  * For DISCUSSION: Compare the student's findings with the uploaded published literature, discussing taxonomic affinities and post-harvest implications using Author-Year citations.
+  * For ABSTRACT: Synthesize the full study concisely into 200–250 words without in-text citations.
+  * For REFERENCES (Literature Cited): Format an alphabetical bibliography of cited literature in standard international phytopathology style.
 
-When generating manuscript text:
-- Strictly bind to the student's actual entered data (sequences, isolate codes, measurements, GenBank IDs, and analyzed images). Do NOT hallucinate fabricated numbers when the user has provided real values.
-- Maintain academic precision, italicize scientific Latin binomials (*Camarosporomyces flavigenus*, *Juglans regia*), and provide actionable supervisor tips.
+Always italicize Latin binomials (*Camarosporomyces flavigenus*, *Juglans regia*), maintain academic rigor, and add a brief Supervisor's Note (نکته استاد راهنما) in Persian at the very end of drafted sections.
 `;
 
 // API route for AI Plant Pathology Supervisor
@@ -132,37 +134,56 @@ Provide a scientific assessment of colony morphology, pigment exudation, or tabu
 
     if (action === 'audit_rigor') {
       prompt = `
-Perform a thorough Academic Scientific Rigor Audit (بررسی موشکافانه استاد راهنما) based strictly on the student's actual entered data:
+Perform a thorough Academic Scientific Rigor Audit (بررسی موشکافانه استاد راهنما) based on the student's actual project state:
 Target Pathogen: Camarosporomyces flavigenus
 Host: Persian Walnut (Juglans regia L.) - Kernel rot
-User Provided Data:
+User Project Data:
 ${JSON.stringify(payload, null, 2)}
 
 Provide the audit covering:
-1. Data Completeness Score (0-100) based on what the student has entered vs what is still missing.
-2. Molecular Data Evaluation (LSU & tub2 sequences, primers, GenBank accessions).
-3. Morphological Data Evaluation (Conidial length/width, septa, colony characteristics, yellow pigment).
-4. Uploaded Lab Images Evaluation (Micrographs & phylogenetic tree scans).
-5. Specific missing items or next steps the student must complete before journal submission.
+1. Data Completeness Score (0-100).
+2. Molecular & Morphological Data Completeness.
+3. Literature Grounding & References Status (Are adequate reference papers uploaded for Introduction and Discussion?).
+4. Red flags or missing items before submission.
 
 Respond in ${language === 'fa' ? 'Persian (فارسی آکادمیک)' : 'English'}.
 `;
     } else if (action === 'draft_section') {
-      const { sectionName, articleType, contextData } = payload;
+      const { sectionName, sectionKey, articleType, contextData, relevantReferences = [] } = payload;
       prompt = `
-Act as the lead author and academic supervisor. Draft or refine the "${sectionName}" section for a high-impact plant pathology paper.
+Act as the lead author and academic supervisor. Draft or refine the "${sectionName}" section for a plant pathology paper.
+Section Key: ${sectionKey}
 Article Type: ${articleType || 'First Disease Report / Disease Note'}
 Target Journal style: Plant Disease (APS) / Crop Protection (Elsevier)
 
-IMPORTANT: Use ONLY the student's actual experimental data and analyzed images provided below:
+Relevant Literature & References provided by the student for this section:
+${JSON.stringify(relevantReferences, null, 2)}
+
+Student's Experimental Data (Sequences, Morphology, Image Analyses):
 ${JSON.stringify(contextData, null, 2)}
 
-Drafting Requirements for "${sectionName}":
+SPECIFIC DRAFTING INSTRUCTIONS FOR "${sectionName}":
+${
+  sectionKey === 'introduction'
+    ? `Rely heavily on the student's provided literature and reference excerpts above. Discuss the global economic significance of Persian walnut (Juglans regia), the commercial impact of fungal kernel rots and mold, and the emergence of coelomycetous pathogens. Cite all claims using standard Author-Year format (e.g., Crous et al. 2018; Michailides et al. 2020). Conclude with a clear statement of objectives identifying C. flavigenus on walnut kernels for the first time.`
+    : sectionKey === 'materialsMethods'
+    ? `Detail sampling, surface sterilization, isolation on PDA, morphological micrometry under DIC microscopy, DNA extraction, and PCR amplification with primers LR0R/LR5 for LSU and Bt2a/Bt2b for beta-tubulin. Cite primer references (e.g., White et al. 1990; Glass and Donaldson 1995) in Author-Year format.`
+    : sectionKey === 'results'
+    ? `Ground strictly in the student's real entered molecular sequences (LSU & tub2 lengths, GenBank accessions), morphological measurements (conidia length, width, L/W ratio, septation), and analyzed image findings. State exact measurements.`
+    : sectionKey === 'discussion'
+    ? `Synthesize the student's findings with the literature references. Discuss taxonomic affinities in Camarosporidiaceae, explain why beta-tubulin confers superior species-level resolution over ITS in Camarosporomyces (citing Crous et al. 2018), and discuss post-harvest disease management in Author-Year citation format.`
+    : sectionKey === 'abstract'
+    ? `Write a tight, cohesive 200–250 word phytopathology abstract summarizing symptoms, isolation, conidia dimensions, LSU & tub2 GenBank accessions, and phylogenetic confirmation without in-text citations.`
+    : sectionKey === 'references'
+    ? `Compile an alphabetical bibliography of all cited literature formatted strictly according to APS (Plant Disease / Phytopathology) style.`
+    : `Draft professional scientific text suited for this section.`
+}
+
+Requirements:
 - Flawless, publishable scientific English.
-- Use exact entered values: conidia measurements, isolate codes, primer sets, and GenBank numbers. If any value is not yet entered by the student, insert clear bracketed guidance [e.g., [Insert exact conidial length]].
+- Always use Author-Year citation format (e.g. Crous et al. 2018) when citing.
 - Italicize Latin binomials (*Camarosporomyces flavigenus*, *Juglans regia*).
-- If uploaded image analyses are present in contextData, incorporate those visual observations seamlessly into the text.
-- Include a short "Supervisor's Note" (نکته استاد راهنما) in Persian at the very end highlighting why this section was structured this way.
+- Conclude with a brief "Supervisor's Note" (نکته استاد راهنما) in Persian highlighting editorial tips for this section.
 `;
     } else if (action === 'chat_supervisor') {
       const { userMessage, history = [], currentData } = payload;
@@ -170,7 +191,7 @@ Drafting Requirements for "${sectionName}":
 The student asks you a question regarding their research on Camarosporomyces flavigenus on walnut kernels:
 Question: "${userMessage}"
 
-The student's currently entered project data:
+The student's currently entered project data and references:
 ${JSON.stringify(currentData, null, 2)}
 
 Recent Conversation Context:
@@ -180,7 +201,7 @@ Provide a direct, deeply knowledgeable, supportive, and scientifically rigorous 
 Respond in ${language === 'fa' ? 'Persian' : 'English'}.
 `;
     } else {
-      prompt = `Provide expert plant pathology guidance on Camarosporomyces flavigenus on walnut kernels for: ${JSON.stringify(payload)}`;
+      prompt = `Provide expert plant pathology guidance on Camarosporomyces flavigenus for: ${JSON.stringify(payload)}`;
     }
 
     const response = await ai.models.generateContent({
@@ -211,16 +232,14 @@ function getDomainFallbackResponse(action: string, payload: any, language: strin
   if (action === 'analyze_image') {
     return `### نتایج تحلیل تصویر میکروسکوپی / درخت تبارشناسی
 ۱. **شناسایی ساختارها:** کنیدی‌های تک‌سلولی تا چندسلولی با تیغه‌های عرضی و طولی (موری‌فرم).
-۲. **ویژگی‌های تشخیصی:** رنگ قهوه‌ای کم‌رنگ، دیواره صاف تا کمی زگیل‌دار، انطباق کامل با مشخصات سرده *Camarosporomyces*.
+۲. **ویژگی‌های تشخیصی:** رنگ قهوه‌ای کم‌رنگ، دیواره صاف تا کمی زگیل‌دار، انطباق با مشخصات سرده *Camarosporomyces*.
 ۳. **متن پیشنهادی برای نتایج مقاله:**
 "Microscopic observation of the fungal isolate revealed pale brown, muriform to transversely septate conidia with smooth to verruculose walls, characteristic of Camarosporomyces flavigenus."`;
   }
 
-  if (action === 'audit_rigor') {
-    return `### بررسی صحت علمی داده‌های وارد شده
-- وضعیت داده‌های مولکولی: لطفاً توالی‌های دو ژن LSU و tub2 را در فرم وارد نمایید.
-- وضعیت داده‌های ریخت‌شناختی: ابعاد کنیدی‌ها و مشخصات پرگنه را تکمیل کنید.
-- تصاویر آزمایشگاهی: برای افزایش اعتبار مقاله، اسکن درخت تبارشناسی و عکس‌های میکروسکوپی را آپلود نمایید.`;
+  if (action === 'draft_section') {
+    return `### پیش‌نویس بخش ${payload?.sectionName || 'مقاله'}:
+Persian walnut (*Juglans regia* L.) is an economically vital horticultural crop cultivated globally for its nutritional kernels. However, fungal kernel decay significantly reduces kernel grade and marketability (Michailides et al. 2020). In this study, we investigated an unrecorded fungal rot of walnut kernels. Based on dual-locus molecular sequencing of the 28S large subunit ribosomal RNA gene (LSU) and beta-tubulin (*tub2*), combined with micromorphological characterization, the pathogen was identified as *Camarosporomyces flavigenus* (Crous et al. 2018). To our knowledge, this report constitutes the first record of *C. flavigenus* causing walnut kernel decay worldwide.`;
   }
 
   return `سامانه دستیار تخصصی آماده دریافت و تحلیل داده‌های شماست.`;

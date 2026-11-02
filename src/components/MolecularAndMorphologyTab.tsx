@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ProjectData, SampleIsolate, LabImageUpload } from '../types';
+import { ProjectData, SampleIsolate, LabImageUpload, ResearchReference } from '../types';
 import { 
   Dna, 
   Microscope, 
@@ -13,9 +13,10 @@ import {
   Plus, 
   Send,
   FileCheck,
-  AlertCircle,
-  HelpCircle,
-  Eye
+  BookOpen,
+  Link as LinkIcon,
+  FileText,
+  BookmarkPlus
 } from 'lucide-react';
 
 interface MolecularAndMorphologyTabProps {
@@ -31,7 +32,7 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
   language,
   onNavigateToManuscript,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'molecular' | 'morphology' | 'images'>('molecular');
+  const [activeSubTab, setActiveSubTab] = useState<'molecular' | 'morphology' | 'images' | 'references'>('molecular');
   const [activeLocus, setActiveLocus] = useState<'LSU' | 'TUB2'>('LSU');
   const [copiedFasta, setCopiedFasta] = useState(false);
   const [analyzingImageId, setAnalyzingImageId] = useState<string | null>(null);
@@ -47,6 +48,18 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
     cultureCollectionId: '',
   });
   const [showAddIsolate, setShowAddIsolate] = useState(false);
+
+  // New research reference form state
+  const [showAddRef, setShowAddRef] = useState(false);
+  const [newRef, setNewRef] = useState<Partial<ResearchReference>>({
+    title: '',
+    authors: '',
+    year: '',
+    journalOrSource: '',
+    doiOrUrl: '',
+    targetSections: ['introduction'],
+    notesOrExcerpts: '',
+  });
 
   // Sequence stats calculator
   const calculateSequenceStats = (fastaStr: string) => {
@@ -178,7 +191,6 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
   };
 
   const handleSendToManuscript = (analysis: string) => {
-    // Append to Results or Methods
     setProject((prev) => ({
       ...prev,
       manuscript: {
@@ -189,6 +201,90 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
       },
     }));
     onNavigateToManuscript();
+  };
+
+  // Research Reference File & Link Handlers
+  const handleReferenceFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      const refItem: ResearchReference = {
+        id: Date.now().toString(),
+        title: file.name.replace(/\.[^/.]+$/, ''),
+        authors: 'Author et al.',
+        year: '2025',
+        journalOrSource: 'Uploaded Document',
+        doiOrUrl: '',
+        targetSections: ['introduction'],
+        notesOrExcerpts: content.slice(0, 1500),
+        fileName: file.name,
+        fileContent: content,
+        addedAt: new Date().toLocaleDateString(),
+      };
+
+      setProject((prev) => ({
+        ...prev,
+        researchReferences: [refItem, ...prev.researchReferences],
+      }));
+    };
+
+    if (file.type.includes('text') || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+      reader.readAsText(file);
+    } else {
+      // PDF or binary
+      reader.readAsDataURL(file);
+    }
+    e.target.value = '';
+  };
+
+  const handleAddManualReference = () => {
+    if (!newRef.title) return;
+    const refItem: ResearchReference = {
+      id: Date.now().toString(),
+      title: newRef.title,
+      authors: newRef.authors || 'Unknown Author',
+      year: newRef.year || '2025',
+      journalOrSource: newRef.journalOrSource || '',
+      doiOrUrl: newRef.doiOrUrl || '',
+      targetSections: newRef.targetSections && newRef.targetSections.length > 0 ? newRef.targetSections : ['introduction'],
+      notesOrExcerpts: newRef.notesOrExcerpts || '',
+      addedAt: new Date().toLocaleDateString(),
+    };
+
+    setProject((prev) => ({
+      ...prev,
+      researchReferences: [refItem, ...prev.researchReferences],
+    }));
+
+    setNewRef({
+      title: '',
+      authors: '',
+      year: '',
+      journalOrSource: '',
+      doiOrUrl: '',
+      targetSections: ['introduction'],
+      notesOrExcerpts: '',
+    });
+    setShowAddRef(false);
+  };
+
+  const handleDeleteReference = (id: string) => {
+    setProject((prev) => ({
+      ...prev,
+      researchReferences: prev.researchReferences.filter((r) => r.id !== id),
+    }));
+  };
+
+  const toggleTargetSection = (sec: 'introduction' | 'materialsMethods' | 'results' | 'discussion') => {
+    const current = newRef.targetSections || [];
+    if (current.includes(sec)) {
+      setNewRef({ ...newRef, targetSections: current.filter((s) => s !== sec) });
+    } else {
+      setNewRef({ ...newRef, targetSections: [...current, sec] });
+    }
   };
 
   return (
@@ -233,11 +329,31 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
           >
             <ImageIcon className="w-3.5 h-3.5" />
             <span>
-              {language === 'fa' ? '۳. آپلود و تحلیل تصاویر و اسکن‌ها' : '3. Lab Images & Tree Scans Analyzer'}
+              {language === 'fa' ? '۳. آپلود و تحلیل تصاویر و اسکن‌ها' : '3. Lab Images & Tree Scans'}
             </span>
             {project.labImages.length > 0 && (
               <span className="px-1.5 py-0.2 bg-teal-900 text-white text-[10px] rounded-full font-mono">
                 {project.labImages.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('references')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+              activeSubTab === 'references'
+                ? 'bg-teal-700 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>
+              {language === 'fa' ? '۴. مراجع و اسناد پژوهش (Literature)' : '4. Research Literature & References'}
+            </span>
+            {project.researchReferences.length > 0 && (
+              <span className="px-1.5 py-0.2 bg-teal-900 text-white text-[10px] rounded-full font-mono">
+                {project.researchReferences.length}
               </span>
             )}
           </button>
@@ -253,7 +369,6 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
       {/* 1. MOLECULAR DATA ENTRY */}
       {activeSubTab === 'molecular' && (
         <div className="space-y-6">
-          {/* Locus Selection Buttons */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
               type="button"
@@ -463,7 +578,6 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
               </button>
             </div>
 
-            {/* Add Isolate Form Modal/Drawer */}
             {showAddIsolate && (
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3 text-xs">
                 <div className="font-bold text-slate-900">{language === 'fa' ? 'مشخصات جدایه جدید:' : 'New Isolate Details:'}</div>
@@ -518,7 +632,6 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
               </div>
             )}
 
-            {/* Isolates Table */}
             {project.isolates.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg">
                 {language === 'fa' 
@@ -804,7 +917,6 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
       {/* 3. MULTIMODAL LAB IMAGES & TREE SCANS ANALYZER */}
       {activeSubTab === 'images' && (
         <div className="space-y-6">
-          {/* Uploader Dropzone */}
           <div className="bg-white border-2 border-dashed border-teal-300/80 hover:border-teal-500 rounded-2xl p-6 text-center transition-colors bg-teal-50/20">
             <div className="max-w-md mx-auto space-y-3">
               <div className="w-12 h-12 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center mx-auto">
@@ -821,7 +933,6 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
                 </p>
               </div>
 
-              {/* Upload Action Buttons for Categories */}
               <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                 <label className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium rounded-lg cursor-pointer shadow-xs transition-colors">
                   <Microscope className="w-3.5 h-3.5" />
@@ -859,7 +970,7 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
             </div>
           </div>
 
-          {/* Uploaded Images List with AI Analysis */}
+          {/* Uploaded Images List */}
           {project.labImages.length === 0 ? (
             <div className="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200 rounded-xl">
               {language === 'fa'
@@ -884,7 +995,6 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
                     className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4"
                   >
                     <div className="flex flex-col md:flex-row items-start gap-5">
-                      {/* Thumbnail with overlay badge */}
                       <div className="w-full md:w-56 h-48 bg-slate-900 rounded-lg overflow-hidden relative shrink-0 border border-slate-200">
                         <img
                           src={img.dataUrl}
@@ -896,7 +1006,6 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
                         </div>
                       </div>
 
-                      {/* Content & AI Analysis */}
                       <div className="flex-1 space-y-3 w-full">
                         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                           <div>
@@ -912,7 +1021,7 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
                                   ),
                                 }));
                               }}
-                              placeholder={language === 'fa' ? 'عنوان یا شرح تصویر (مثلاً کنیدی‌ها در بزرگنمایی ۱۰۰۰x)...' : 'Caption / notes...'}
+                              placeholder={language === 'fa' ? 'عنوان یا شرح تصویر...' : 'Caption / notes...'}
                               className="text-xs font-bold text-slate-900 border-b border-dashed border-slate-300 focus:outline-none focus:border-teal-600 pb-0.5"
                             />
                             <div className="text-[10px] text-slate-400 font-mono mt-0.5">
@@ -951,7 +1060,6 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
                           </div>
                         </div>
 
-                        {/* Analysis Output Box */}
                         {img.aiAnalysis ? (
                           <div className="p-4 bg-teal-50/70 rounded-lg border border-teal-200/90 text-xs text-slate-800 space-y-2">
                             <div className="flex items-center justify-between pb-1.5 border-b border-teal-200">
@@ -974,7 +1082,7 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
                         ) : (
                           <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-[11px] text-slate-500 italic">
                             {language === 'fa'
-                              ? 'هنوز تحلیلی برای این تصویر ثبت نشده است. بر روی "تحلیل تصویر با هوش مصنوعی" کلیک نمایید تا ساختارهای ریخت‌شناسی یا شاخه‌های درخت فیلوژنی استخراج شوند.'
+                              ? 'بر روی "تحلیل تصویر با هوش مصنوعی" کلیک نمایید تا ساختارهای ریخت‌شناسی یا شاخه‌های درخت فیلوژنی استخراج شوند.'
                               : 'Click "Analyze Image with AI" to extract conidial structures or phylogenetic tree clade relationships.'}
                           </div>
                         )}
@@ -985,6 +1093,252 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 4. RESEARCH LITERATURE & REFERENCE LIBRARY (NEW) */}
+      {activeSubTab === 'references' && (
+        <div className="space-y-6">
+          {/* Top Actions Card */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-teal-700" />
+                  {language === 'fa' ? 'کتابخانه مقالات، اسناد و مراجع پژوهش (Research Literature Library)' : 'Research Literature & Reference Library'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {language === 'fa'
+                    ? 'فایل‌های PDF/متنی مقالات مرتبط، لینک‌های DOI یا چکیده منابع را وارد کنید تا هوش مصنوعی در نگارش مقدمه (Introduction) و بحث (Discussion) با ارجاع دقیق Author-Year از آن‌ها استفاده کند.'
+                    : 'Upload reference papers (PDF/text), DOIs, or excerpts so the AI can cite them in Author-Year format in the Introduction and Discussion.'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium rounded-lg cursor-pointer transition-colors border border-slate-300">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{language === 'fa' ? 'آپلود فایل مقاله (PDF / TXT)' : 'Upload Paper File'}</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.txt,.md,.doc,.docx"
+                    className="hidden"
+                    onChange={handleReferenceFileUpload}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAddRef(!showAddRef)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium rounded-lg cursor-pointer shadow-xs transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{language === 'fa' ? 'افزودن منبع جدید' : 'Add Reference'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Add Reference Form */}
+            {showAddRef && (
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3 text-xs">
+                <div className="font-bold text-slate-900">
+                  {language === 'fa' ? 'مشخصات منبع یا مقاله علمی:' : 'Reference Information:'}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-600 mb-1">عنوان مقاله یا کتاب (Title):</label>
+                    <input
+                      type="text"
+                      value={newRef.title}
+                      onChange={(e) => setNewRef({ ...newRef, title: e.target.value })}
+                      placeholder="e.g. Fungal Planet description sheets: 785–867"
+                      className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 mb-1">نویسندگان (Authors - e.g. Crous, P.W., et al.):</label>
+                    <input
+                      type="text"
+                      value={newRef.authors}
+                      onChange={(e) => setNewRef({ ...newRef, authors: e.target.value })}
+                      placeholder="e.g. Crous, P. W., et al."
+                      className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-600 mb-1">سال انتشار (Year):</label>
+                    <input
+                      type="text"
+                      value={newRef.year}
+                      onChange={(e) => setNewRef({ ...newRef, year: e.target.value })}
+                      placeholder="e.g. 2018"
+                      className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 mb-1">ژورنال / منبع (Journal / Book):</label>
+                    <input
+                      type="text"
+                      value={newRef.journalOrSource}
+                      onChange={(e) => setNewRef({ ...newRef, journalOrSource: e.target.value })}
+                      placeholder="e.g. Persoonia 41: 238–417"
+                      className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 mb-1">لینک یا DOI:</label>
+                    <input
+                      type="text"
+                      value={newRef.doiOrUrl}
+                      onChange={(e) => setNewRef({ ...newRef, doiOrUrl: e.target.value })}
+                      placeholder="https://doi.org/10.3767/persoonia.2018.41.12"
+                      className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Target Section Checkboxes */}
+                <div>
+                  <label className="block text-slate-600 mb-1 font-medium">
+                    {language === 'fa' ? 'این منبع در کدام بخش‌های مقاله مورد استناد قرار گیرد؟' : 'Target Sections to Cite:'}
+                  </label>
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    {[
+                      { key: 'introduction', label: 'مقدمه (Introduction)' },
+                      { key: 'materialsMethods', label: 'مواد و روش‌ها (Methods)' },
+                      { key: 'results', label: 'نتایج (Results)' },
+                      { key: 'discussion', label: 'بحث (Discussion)' },
+                    ].map((item) => (
+                      <label key={item.key} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newRef.targetSections?.includes(item.key as any)}
+                          onChange={() => toggleTargetSection(item.key as any)}
+                          className="rounded text-teal-700 focus:ring-teal-500"
+                        />
+                        <span className="text-slate-700 text-xs">{item.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 mb-1">نکات کلیدی، گزیده‌ها یا چکیده مقاله برای هوش مصنوعی:</label>
+                  <textarea
+                    rows={3}
+                    value={newRef.notesOrExcerpts}
+                    onChange={(e) => setNewRef({ ...newRef, notesOrExcerpts: e.target.value })}
+                    placeholder={language === 'fa' ? 'نکات مهم مقاله که مایلید هوش مصنوعی در متن مقدمه یا بحث به آن ارجاع دهد...' : 'Key takeaways, findings, or quote excerpts for AI citation...'}
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddRef(false)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 cursor-pointer"
+                  >
+                    انصراف
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddManualReference}
+                    className="px-4 py-1.5 rounded-lg bg-teal-700 text-white hover:bg-teal-800 cursor-pointer font-medium"
+                  >
+                    ثبت در کتابخانه
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* List of References */}
+            {project.researchReferences.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
+                {language === 'fa'
+                  ? 'هنوز منبع یا مقاله‌ای اضافه نشده است. فایل‌های PDF مقالات یا اطلاعات DOI را از دکمه‌های بالا اضافه نمایید.'
+                  : 'No literature references added yet. Upload PDFs or enter DOIs to ground your Introduction and Discussion.'}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
+                  <span>{project.researchReferences.length} {language === 'fa' ? 'منبع ثبت شده' : 'References Loaded'}</span>
+                  <span>Citation Style: Author-Year (e.g. Crous et al. 2018)</span>
+                </div>
+
+                <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white">
+                  {project.researchReferences.map((ref) => (
+                    <div key={ref.id} className="p-4 hover:bg-slate-50/60 transition-colors space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-slate-900">
+                              {ref.authors} ({ref.year})
+                            </span>
+                            {ref.doiOrUrl && (
+                              <a
+                                href={ref.doiOrUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[11px] font-mono text-teal-700 hover:underline flex items-center gap-0.5"
+                              >
+                                <LinkIcon className="w-3 h-3" />
+                                <span>DOI / Link</span>
+                              </a>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-700 font-medium">{ref.title}</div>
+                          <div className="text-[11px] text-slate-500 italic">{ref.journalOrSource}</div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReference(ref.id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
+                          title="Delete reference"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Target Section Tags */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-[10px] text-slate-400 font-mono">Cited in:</span>
+                        {ref.targetSections.map((sec) => (
+                          <span
+                            key={sec}
+                            className="px-2 py-0.5 rounded text-[10px] font-mono bg-teal-50 text-teal-800 border border-teal-200/60"
+                          >
+                            {sec === 'introduction'
+                              ? 'Introduction'
+                              : sec === 'materialsMethods'
+                              ? 'Methods'
+                              : sec === 'results'
+                              ? 'Results'
+                              : 'Discussion'}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Excerpt preview if available */}
+                      {ref.notesOrExcerpts && (
+                        <div className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 font-sans leading-relaxed">
+                          <span className="font-semibold text-slate-700">گزیده / یادداشت: </span>
+                          {ref.notesOrExcerpts}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -22,6 +22,20 @@ export interface LabImageUpload {
   isAnalyzing?: boolean;
 }
 
+export interface ResearchReference {
+  id: string;
+  title: string;
+  authors: string;
+  year: string;
+  journalOrSource: string;
+  doiOrUrl: string;
+  targetSections: ('introduction' | 'materialsMethods' | 'results' | 'discussion')[];
+  notesOrExcerpts: string;
+  fileName?: string;
+  fileContent?: string;
+  addedAt: string;
+}
+
 export interface ProjectData {
   pathogenName: string;
   authority: string;
@@ -60,6 +74,8 @@ export interface ProjectData {
   };
   // Uploaded Lab Images and AI Analyses
   labImages: LabImageUpload[];
+  // Research Literature & Reference Library
+  researchReferences: ResearchReference[];
   // Manuscript Sections
   manuscript: {
     targetJournal: string;
@@ -90,7 +106,7 @@ export interface RigorAuditItem {
   id: string;
   title: string;
   titleFa: string;
-  category: 'molecular' | 'morphology' | 'imaging' | 'standards';
+  category: 'molecular' | 'morphology' | 'imaging' | 'references' | 'standards';
   status: 'passed' | 'warning' | 'pending';
   description: string;
   recommendation: string;

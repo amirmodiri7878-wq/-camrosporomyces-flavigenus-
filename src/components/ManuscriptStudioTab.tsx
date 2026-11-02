@@ -12,7 +12,8 @@ import {
   BookOpen,
   Dna,
   Microscope,
-  ImageIcon
+  BookmarkPlus,
+  Send
 } from 'lucide-react';
 
 interface ManuscriptStudioTabProps {
@@ -36,7 +37,7 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
   setProject,
   language,
 }) => {
-  const [activeSection, setActiveSection] = useState<SectionKey>('abstract');
+  const [activeSection, setActiveSection] = useState<SectionKey>('introduction');
   const [previewMode, setPreviewMode] = useState<'split' | 'editor' | 'preview'>('split');
   const [aiDrafting, setAiDrafting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -60,8 +61,8 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
       key: 'introduction',
       labelEn: 'Introduction',
       labelFa: 'مقدمه',
-      guidanceFa: 'اهمیت اقتصادی گردو، خسارت پوسیدگی مغز در بازار، عدم گزارش قبلی این قارچ روی گردو، و هدف مطالعه در پاراگراف پایانی آورده شود.',
-      guidanceEn: 'Economic value of walnut, financial loss from kernel rots, absence of prior records on walnut, and explicit study objectives in the final paragraph.',
+      guidanceFa: 'مقدمه بر اساس مقالات و مراجع بارگذاری‌شده در کتابخانه اسناد نگاشته می‌شود. اهمیت اقتصادی گردو، پوسیدگی مغز و جایگاه سرده Camarosporomyces با ارجاع Author-Year قید گردد.',
+      guidanceEn: 'Introduction is drafted strictly from literature and uploaded references. Discuss walnut economic losses and Camarosporomyces with Author-Year citations.',
     },
     {
       key: 'materialsMethods',
@@ -74,22 +75,22 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
       key: 'results',
       labelEn: 'Results',
       labelFa: 'نتایج',
-      guidanceFa: 'توصیف دقیق ریخت‌شناسی (میانگین و دامنه طول و عرض کنیدی، رنگیزه زرد در آگار)، درصد شباهت بلاست (BLAST identity)، بوت‌استرپ درخت فیلوژنی، و توصیف تصاویر میکروسکوپی بارگذاری شده.',
-      guidanceEn: 'Detailed morphology (mean & range of conidia, yellow pigment), BLAST identity %, phylogenetic bootstrap %, and descriptions of uploaded micrographs/trees.',
+      guidanceFa: 'نتایج کاملاً بر اساس داده‌های تجربی شما تدوین می‌شود: ابعاد کنیدی‌ها، رنگیزه زرد در آگار، درصد شباهت بلاست، بوت‌استرپ درخت فیلوژنی، و توصیف تصاویر میکروسکوپی.',
+      guidanceEn: 'Results are strictly generated from your experimental data: conidia measurements, yellow pigment, BLAST identity %, tree bootstrap, and analyzed micrographs.',
     },
     {
       key: 'discussion',
       labelEn: 'Discussion',
-      labelFa: 'بحث و نتیجه‌گیری',
-      guidanceFa: 'جایگاه تاکسونومیک سرده، قدرت تفکیک بالای بتا-توبولین در مقایسه با ITS، پیامد بیماری برای انبارداری گردو و اقدامات مدیریتی بهداشتی باغ.',
-      guidanceEn: 'Taxonomic placement, superior resolving power of beta-tubulin over ITS in Camarosporomyces, post-harvest rot implications, and orchard management.',
+      labelFa: 'بحث و مقایسه با پیشینه',
+      guidanceFa: 'تلفیق یافته‌های آزمایشگاهی شما با مقالات پیشین: اثبات جایگاه تاکسونومیک، مزیت بتا-توبولین نسبت به ITS در تفکیک گونه‌ای (Crous et al. 2018) و پیامدهای بهداشتی در باغات.',
+      guidanceEn: 'Synthesize your lab findings with cited literature: taxonomic placement, superior resolving power of beta-tubulin over ITS (Crous et al. 2018), and orchard management.',
     },
     {
       key: 'references',
       labelEn: 'Literature Cited',
       labelFa: 'منابع و مراجع علمی',
-      guidanceFa: 'رفرانس‌دهی به مقالات پایه توصیف‌کننده گونه (مانند Crous et al.، مقالات پرایمرها و مقالات مرتبط با بیماری‌های گردو) مطابق فرمت مجله هدف.',
-      guidanceEn: 'Standard citation formatting including ex-type descriptions (Crous et al.), primer references, and walnut pathology benchmarks.',
+      guidanceFa: 'فهرست الفبایی تمام مراجع استناد شده در متن مقاله مطابق با استاندارد استناددهی انجمن بیماری‌شناسی آمریکا (APS / Plant Disease).',
+      guidanceEn: 'Alphabetical bibliography of all cited papers matching in-text citations according to APS / Plant Disease journal standards.',
     },
     {
       key: 'acknowledgements',
@@ -102,6 +103,11 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
 
   const currentSection = sections.find((s) => s.key === activeSection)!;
 
+  // Filter references relevant to the active section
+  const sectionRefs = project.researchReferences.filter((ref) =>
+    ref.targetSections.includes(activeSection as any)
+  );
+
   const handleUpdateText = (value: string) => {
     setProject((prev) => ({
       ...prev,
@@ -112,51 +118,51 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
     }));
   };
 
-  // Live Context Data extracted from user inputs & images
-  const buildUserContextPayload = () => {
+  // Build Context Payload with Section-specific routing
+  const buildSectionPayload = () => {
     return {
-      pathogen: project.pathogenName || 'Camarosporomyces flavigenus',
-      host: project.hostLatinName || 'Juglans regia',
-      disease: project.diseaseSymptom,
-      molecularData: {
-        primerLSU: project.primerLSU,
-        primerTub2: project.primerTub2,
+      sectionName: currentSection.labelEn,
+      sectionKey: activeSection,
+      articleType: project.manuscript.articleType,
+      relevantReferences: sectionRefs.map((r) => ({
+        authors: r.authors,
+        year: r.year,
+        title: r.title,
+        journal: r.journalOrSource,
+        doiOrUrl: r.doiOrUrl,
+        notesOrExcerpts: r.notesOrExcerpts,
+      })),
+      allReferences: project.researchReferences.map((r) => `${r.authors} (${r.year}). ${r.title}. ${r.journalOrSource}. ${r.doiOrUrl}`),
+      contextData: {
+        pathogen: project.pathogenName || 'Camarosporomyces flavigenus',
+        host: project.hostLatinName || 'Juglans regia',
+        disease: project.diseaseSymptom,
         lsuLength: project.fastaLSU.replace(/[\r\n\s>]/g, '').length,
         tub2Length: project.fastaTub2.replace(/[\r\n\s>]/g, '').length,
         genBankLSU: project.genBankLSU,
         genBankTub2: project.genBankTub2,
-        isolates: project.isolates,
-      },
-      morphologicalData: {
-        colony: project.colonyPDA,
+        primers: { lsu: project.primerLSU, tub2: project.primerTub2 },
         conidia: project.conidiaStats,
+        colony: project.colonyPDA,
+        isolates: project.isolates,
+        imageAnalyses: project.labImages
+          .filter((img) => img.aiAnalysis)
+          .map((img) => `${img.caption}: ${img.aiAnalysis}`),
       },
-      imageAnalyses: project.labImages
-        .filter((img) => img.aiAnalysis)
-        .map((img) => ({
-          name: img.name,
-          category: img.category,
-          caption: img.caption,
-          analysis: img.aiAnalysis,
-        })),
     };
   };
 
   const handleAiDraftSection = async () => {
     setAiDrafting(true);
     try {
-      const contextData = buildUserContextPayload();
+      const payload = buildSectionPayload();
       const response = await fetch('/api/gemini/advisor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'draft_section',
           language,
-          payload: {
-            sectionName: currentSection.labelEn,
-            articleType: project.manuscript.articleType,
-            contextData,
-          },
+          payload,
         }),
       });
 
@@ -185,35 +191,106 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
     .split(/\s+/)
     .filter(Boolean).length;
 
+  // Dynamic button labels based on section
+  const getDraftingButtonConfig = () => {
+    switch (activeSection) {
+      case 'introduction':
+        return {
+          label: language === 'fa' ? 'نگارش با مراجع بارگذاری‌شده' : 'Draft from Literature & Citations',
+          icon: <BookOpen className="w-3.5 h-3.5" />,
+          hint: language === 'fa' ? 'استفاده از مراجع کتابخانه با فرمت Author-Year' : 'Uses uploaded references with Author-Year citations',
+        };
+      case 'materialsMethods':
+        return {
+          label: language === 'fa' ? 'نگارش با پروتکل‌ها و پرایمرها' : 'Draft Methods from Protocols',
+          icon: <Dna className="w-3.5 h-3.5" />,
+          hint: language === 'fa' ? 'استفاده از پرایمرهای LR0R/LR5 و Bt2a/Bt2b' : 'Uses entered primers and laboratory parameters',
+        };
+      case 'results':
+        return {
+          label: language === 'fa' ? 'نگارش با داده‌ها و تصاویر' : 'Draft Results from Lab Data & Images',
+          icon: <Microscope className="w-3.5 h-3.5" />,
+          hint: language === 'fa' ? 'استفاده دقیق از توالی‌ها، ابعاد کنیدی‌ها و تصاویر' : 'Uses entered sequences, conidial measurements, and analyzed micrographs',
+        };
+      case 'discussion':
+        return {
+          label: language === 'fa' ? 'نگارش بحث و مقایسه با پیشینه' : 'Draft Discussion from Findings & Literature',
+          icon: <Sparkles className="w-3.5 h-3.5" />,
+          hint: language === 'fa' ? 'تلفیق نتایج تجربی با مقالات استنادشده' : 'Compares your findings against published literature',
+        };
+      case 'abstract':
+        return {
+          label: language === 'fa' ? 'نگارش چکیده جامع ساختاریافته' : 'Draft Cohesive Abstract',
+          icon: <FileText className="w-3.5 h-3.5" />,
+          hint: language === 'fa' ? 'خلاصه‌سازی ۲۰۰ تا ۲۵۰ کلمه‌ای کل پژوهش' : 'Tight synthesis without citations',
+        };
+      case 'references':
+        return {
+          label: language === 'fa' ? 'تدوین فهرست منابع (Author-Year)' : 'Compile References List',
+          icon: <BookmarkPlus className="w-3.5 h-3.5" />,
+          hint: language === 'fa' ? 'فهرست الفبایی مطابق استاندارد APS' : 'Alphabetical list according to APS journal guidelines',
+        };
+      default:
+        return {
+          label: language === 'fa' ? 'پیش‌نویس با هوش مصنوعی' : 'Draft with AI',
+          icon: <Sparkles className="w-3.5 h-3.5" />,
+          hint: '',
+        };
+    }
+  };
+
+  const btnConfig = getDraftingButtonConfig();
+
   return (
     <div className="space-y-6" dir={language === 'fa' ? 'rtl' : 'ltr'}>
-      {/* Live Data Binding Strip */}
+      {/* Live Data & References Binding Strip */}
       <div className="bg-slate-900 text-slate-200 rounded-xl p-3 px-4 text-xs font-mono flex flex-wrap items-center justify-between gap-3 border border-slate-800">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-teal-400 font-bold flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
-            {language === 'fa' ? 'داده‌های متصل به استودیو:' : 'Linked Lab Data Sources:'}
+            {language === 'fa' ? 'منبع تغذیه نگارش:' : 'Active Drafting Grounding:'}
           </span>
-          <span className="text-slate-300">
-            LSU: {project.fastaLSU ? `${project.fastaLSU.length > 50 ? 'توالی وارد شده' : 'دارای داده'}` : 'فاقد توالی'}
-          </span>
-          <span className="text-slate-600">·</span>
-          <span className="text-slate-300">
-            tub2: {project.fastaTub2 ? 'توالی وارد شده' : 'فاقد توالی'}
-          </span>
-          <span className="text-slate-600">·</span>
-          <span className="text-slate-300">
-            {language === 'fa' ? 'ابعاد ریخت‌شناسی:' : 'Morphology:'}{' '}
-            {project.conidiaStats.lengthRange || 'در انتظار ورود'}
-          </span>
-          <span className="text-slate-600">·</span>
-          <span className="text-slate-300">
-            {language === 'fa' ? 'تصاویر آزمایشگاهی:' : 'Images:'} {project.labImages.length}
-          </span>
+
+          {(activeSection === 'introduction' || activeSection === 'discussion') && (
+            <span className="text-amber-300 font-medium">
+              {language === 'fa' ? 'کتابخانه مقالات:' : 'Literature:'} {sectionRefs.length}{' '}
+              {language === 'fa' ? 'منبع مرتبط متصل است (فرمت Author-Year)' : 'assigned references (Author-Year)'}
+            </span>
+          )}
+
+          {activeSection === 'results' && (
+            <span className="text-teal-300 font-medium">
+              {language === 'fa' ? 'داده‌های تجربی:' : 'Lab Measurements:'} LSU:{' '}
+              {project.fastaLSU ? 'توالی وارد شده' : 'خالی'} · tub2:{' '}
+              {project.fastaTub2 ? 'توالی وارد شده' : 'خالی'} · ابعاد:{' '}
+              {project.conidiaStats.lengthRange || 'خالی'} · تصاویر: {project.labImages.length}
+            </span>
+          )}
+
+          {activeSection === 'materialsMethods' && (
+            <span className="text-slate-300">
+              پرایمرها: {project.primerLSU.forward.slice(0, 4)} / {project.primerTub2.forward.slice(0, 4)} · مراجع روش‌ها:{' '}
+              {sectionRefs.length} منبع
+            </span>
+          )}
+
+          {activeSection === 'abstract' && (
+            <span className="text-slate-300">
+              {language === 'fa' ? 'سنتز جامع کل مقاله (بدون رفرنس‌دهی درون‌متنی)' : 'Full Study Synthesis (No in-text citations)'}
+            </span>
+          )}
+
+          {activeSection === 'references' && (
+            <span className="text-teal-300">
+              {project.researchReferences.length} {language === 'fa' ? 'منبع در کتابخانه آماده قالب‌بندی الفبایی' : 'citations ready for bibliography'}
+            </span>
+          )}
         </div>
 
-        <span className="text-amber-300 text-[11px]">
-          {language === 'fa' ? 'نگارش هوشمند بر مبنای داده‌های آزمایشگاهی شما' : 'AI drafting strictly grounded in your inputs'}
+        <span className="text-slate-400 text-[11px]">
+          {activeSection === 'introduction' || activeSection === 'discussion'
+            ? 'Citations: Author-Year (e.g. Crous et al. 2018)'
+            : 'Section-specific AI reasoning'}
         </span>
       </div>
 
@@ -305,12 +382,13 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
+                {/* Purpose-Built Section Drafting Button */}
                 <button
                   type="button"
                   onClick={handleAiDraftSection}
                   disabled={aiDrafting}
-                  className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-white bg-teal-700 hover:bg-teal-800 rounded-md transition-colors cursor-pointer disabled:opacity-50"
-                  title="Generate or polish this section with AI Supervisor"
+                  className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-white bg-teal-700 hover:bg-teal-800 rounded-md transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+                  title={btnConfig.hint}
                 >
                   {aiDrafting ? (
                     <>
@@ -319,8 +397,8 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3 h-3" />
-                      <span>{language === 'fa' ? 'نگارش با داده‌های آزمایشگاه' : 'Draft from Lab Data'}</span>
+                      {btnConfig.icon}
+                      <span>{btnConfig.label}</span>
                     </>
                   )}
                 </button>
@@ -343,8 +421,8 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
                 rows={18}
                 placeholder={
                   language === 'fa'
-                    ? 'متن این بخش را بنویسید یا بر روی دکمه "نگارش با داده‌های آزمایشگاه" کلیک کنید تا متن علمی بر اساس توالی‌ها و ابعاد ریخت‌شناسی شما تدوین گردد...'
-                    : 'Write or paste section text, or click "Draft from Lab Data" to formulate scientific text from your entered values...'
+                    ? `متن ${currentSection.labelFa} را بنویسید یا بر روی دکمه "${btnConfig.label}" کلیک نمایید...`
+                    : `Write or paste ${currentSection.labelEn}, or click "${btnConfig.label}"...`
                 }
                 className="w-full text-xs text-slate-800 font-mono leading-relaxed p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 resize-y bg-slate-50/30"
               />
