@@ -1,0 +1,6 @@
+{
+  "name": "PhytoReport AI: Plant Pathology Paper & Advisor Workbench",
+  "description": "Academic supervisor and scientific manuscript assistant for reporting novel plant diseases, specializing in the first report of Camarosporomyces flavigenus on walnut kernels with LSU and Beta-tubulin data.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
