@@ -20,33 +20,35 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   if (!isOpen) return null;
 
   const generateFullManuscriptText = () => {
-    return `${project.manuscript.title.toUpperCase()}
+    const ms = project.manuscript || ({} as any);
+    const kw = Array.isArray(ms.keywords) ? ms.keywords.join(', ') : '';
+    return `${(ms.title || '').toUpperCase()}
 
-Authors: ${project.manuscript.authors}
-Affiliations: ${project.manuscript.affiliations}
+Authors: ${ms.authors || ''}
+Affiliations: ${ms.affiliations || ''}
 
 ABSTRACT
-${project.manuscript.abstract}
+${ms.abstract || ''}
 
-Keywords: ${project.manuscript.keywords.join(', ')}
+Keywords: ${kw}
 
 INTRODUCTION
-${project.manuscript.introduction}
+${ms.introduction || ''}
 
 MATERIALS AND METHODS
-${project.manuscript.materialsMethods}
+${ms.materialsMethods || ''}
 
 RESULTS
-${project.manuscript.results}
+${ms.results || ''}
 
 DISCUSSION
-${project.manuscript.discussion}
+${ms.discussion || ''}
 
 LITERATURE CITED
-${project.manuscript.references}
+${ms.references || ''}
 
 ACKNOWLEDGEMENTS
-${project.manuscript.acknowledgements}
+${ms.acknowledgements || ''}
 `;
   };
 
@@ -57,9 +59,11 @@ ${project.manuscript.acknowledgements}
   };
 
   const handleDownloadDoc = () => {
+    const ms = project.manuscript || ({} as any);
+    const kw = Array.isArray(ms.keywords) ? ms.keywords.join(', ') : '';
     const content = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head><meta charset='utf-8'><title>${project.manuscript.title}</title>
+      <head><meta charset='utf-8'><title>${ms.title || 'Manuscript'}</title>
       <style>
         body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 2.0; }
         h1 { font-size: 16pt; font-weight: bold; text-align: center; }
@@ -69,26 +73,26 @@ ${project.manuscript.acknowledgements}
       </style>
       </head>
       <body>
-        <h1>${project.manuscript.title}</h1>
+        <h1>${ms.title || ''}</h1>
         <div class="meta">
-          <p style="text-indent: 0;"><b>${project.manuscript.authors}</b></p>
-          <p style="text-indent: 0;">${project.manuscript.affiliations}</p>
+          <p style="text-indent: 0;"><b>${ms.authors || ''}</b></p>
+          <p style="text-indent: 0;">${ms.affiliations || ''}</p>
         </div>
         <h2>ABSTRACT</h2>
-        <p>${project.manuscript.abstract}</p>
-        <p style="text-indent: 0; margin-top: 10pt;"><b>Keywords:</b> <i>${project.manuscript.keywords.join(', ')}</i></p>
+        <p>${ms.abstract || ''}</p>
+        <p style="text-indent: 0; margin-top: 10pt;"><b>Keywords:</b> <i>${kw}</i></p>
         <h2>INTRODUCTION</h2>
-        <p>${project.manuscript.introduction}</p>
+        <p>${ms.introduction || ''}</p>
         <h2>MATERIALS AND METHODS</h2>
-        <p>${project.manuscript.materialsMethods.replace(/\n\n/g, '</p><p>')}</p>
+        <p>${(ms.materialsMethods || '').replace(/\n\n/g, '</p><p>')}</p>
         <h2>RESULTS</h2>
-        <p>${project.manuscript.results.replace(/\n\n/g, '</p><p>')}</p>
+        <p>${(ms.results || '').replace(/\n\n/g, '</p><p>')}</p>
         <h2>DISCUSSION</h2>
-        <p>${project.manuscript.discussion.replace(/\n\n/g, '</p><p>')}</p>
+        <p>${(ms.discussion || '').replace(/\n\n/g, '</p><p>')}</p>
         <h2>LITERATURE CITED</h2>
-        <p style="text-indent: 0;">${project.manuscript.references.replace(/\n/g, '<br>')}</p>
+        <p style="text-indent: 0;">${(ms.references || '').replace(/\n/g, '<br>')}</p>
         <h2>ACKNOWLEDGEMENTS</h2>
-        <p>${project.manuscript.acknowledgements}</p>
+        <p>${ms.acknowledgements || ''}</p>
       </body>
       </html>
     `;

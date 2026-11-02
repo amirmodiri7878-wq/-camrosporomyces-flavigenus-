@@ -7,10 +7,12 @@ interface TelemetryBarProps {
 }
 
 export const TelemetryBar: React.FC<TelemetryBarProps> = ({ project, language }) => {
-  const hasLSU = project.fastaLSU.trim().length > 0;
-  const hasTub2 = project.fastaTub2.trim().length > 0;
-  const hasMorph = project.conidiaStats.lengthRange.trim().length > 0 || project.conidiaStats.lengthMean > 0;
-  const imageCount = project.labImages.length;
+  const hasLSU = Boolean(project.fastaLSU?.trim());
+  const hasTub2 = Boolean(project.fastaTub2?.trim());
+  const hasMorph =
+    Boolean(project.conidiaStats?.lengthRange?.trim()) ||
+    (project.conidiaStats?.lengthMean || 0) > 0;
+  const imageCount = (project.labImages || []).length;
 
   // Calculate live completeness score
   let score = 20; // baseline project registered

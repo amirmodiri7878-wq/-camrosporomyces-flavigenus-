@@ -57,11 +57,11 @@ export const ReviewerSimulationTab: React.FC<ReviewerSimulationTabProps> = ({
           action: 'simulate_review',
           language,
           payload: {
-            title: project.manuscript.title,
-            abstract: project.manuscript.abstract,
-            isolates: project.isolates,
-            morphology: project.conidiaStats,
-            labImagesCount: project.labImages.length,
+            title: project.manuscript?.title || '',
+            abstract: project.manuscript?.abstract || '',
+            isolates: project.isolates || [],
+            morphology: project.conidiaStats || {},
+            labImagesCount: (project.labImages || []).length,
           },
         }),
       });

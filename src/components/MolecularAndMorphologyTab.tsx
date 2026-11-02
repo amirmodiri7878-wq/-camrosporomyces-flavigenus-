@@ -61,9 +61,13 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
     notesOrExcerpts: '',
   });
 
+  const isolates = project.isolates || [];
+  const labImages = project.labImages || [];
+  const researchReferences = project.researchReferences || [];
+
   // Sequence stats calculator
-  const calculateSequenceStats = (fastaStr: string) => {
-    const raw = fastaStr.replace(/^>.*$/m, '').replace(/[\r\n\s]/g, '').toUpperCase();
+  const calculateSequenceStats = (fastaStr: string = '') => {
+    const raw = (fastaStr || '').replace(/^>.*$/m, '').replace(/[\r\n\s]/g, '').toUpperCase();
     const length = raw.length;
     const a = (raw.match(/A/g) || []).length;
     const t = (raw.match(/T/g) || []).length;
@@ -73,8 +77,8 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
     return { length, a, t, g, c, gc };
   };
 
-  const lsuStats = calculateSequenceStats(project.fastaLSU);
-  const tub2Stats = calculateSequenceStats(project.fastaTub2);
+  const lsuStats = calculateSequenceStats(project.fastaLSU || '');
+  const tub2Stats = calculateSequenceStats(project.fastaTub2 || '');
 
   const handleCopyFasta = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -331,9 +335,9 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
             <span>
               {language === 'fa' ? '۳. آپلود و تحلیل تصاویر و اسکن‌ها' : '3. Lab Images & Tree Scans'}
             </span>
-            {project.labImages.length > 0 && (
+            {labImages.length > 0 && (
               <span className="px-1.5 py-0.2 bg-teal-900 text-white text-[10px] rounded-full font-mono">
-                {project.labImages.length}
+                {labImages.length}
               </span>
             )}
           </button>
@@ -351,9 +355,9 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
             <span>
               {language === 'fa' ? '۴. مراجع و اسناد پژوهش (Literature)' : '4. Research Literature & References'}
             </span>
-            {project.researchReferences.length > 0 && (
+            {researchReferences.length > 0 && (
               <span className="px-1.5 py-0.2 bg-teal-900 text-white text-[10px] rounded-full font-mono">
-                {project.researchReferences.length}
+                {researchReferences.length}
               </span>
             )}
           </button>
@@ -632,7 +636,7 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
               </div>
             )}
 
-            {project.isolates.length === 0 ? (
+            {isolates.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg">
                 {language === 'fa' 
                   ? 'هنوز جدایه‌ای ثبت نشده است. روی دکمه "افزودن جدایه جدید" کلیک نمایید.' 
@@ -652,7 +656,7 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-mono">
-                    {project.isolates.map((iso) => (
+                    {isolates.map((iso) => (
                       <tr key={iso.id} className="hover:bg-slate-50/50">
                         <td className="py-2.5 px-3 font-bold text-teal-800">{iso.code}</td>
                         <td className="py-2.5 px-3 text-slate-700 italic">{iso.host}</td>
@@ -971,7 +975,7 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
           </div>
 
           {/* Uploaded Images List */}
-          {project.labImages.length === 0 ? (
+          {labImages.length === 0 ? (
             <div className="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200 rounded-xl">
               {language === 'fa'
                 ? 'هنوز تصویری بارگذاری نشده است. می‌توانید با بارگذاری عکس‌های آزمایشگاهی، متن تشریحی آماده برای درج در نتایج مقاله تحویل بگیرید.'
@@ -984,12 +988,12 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
                   {language === 'fa' ? 'تصاویر بارگذاری‌شده و تحلیل‌های هوش مصنوعی' : 'Uploaded Lab Images & Multimodal Diagnostics'}
                 </span>
                 <span className="text-xs text-slate-500 font-mono">
-                  {project.labImages.length} {language === 'fa' ? 'تصویر' : 'images'}
+                  {labImages.length} {language === 'fa' ? 'تصویر' : 'images'}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 gap-6">
-                {project.labImages.map((img) => (
+                {labImages.map((img) => (
                   <div
                     key={img.id}
                     className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4"
@@ -1259,7 +1263,7 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
             )}
 
             {/* List of References */}
-            {project.researchReferences.length === 0 ? (
+            {researchReferences.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
                 {language === 'fa'
                   ? 'هنوز منبع یا مقاله‌ای اضافه نشده است. فایل‌های PDF مقالات یا اطلاعات DOI را از دکمه‌های بالا اضافه نمایید.'
@@ -1268,12 +1272,12 @@ export const MolecularAndMorphologyTab: React.FC<MolecularAndMorphologyTabProps>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs text-slate-500 font-mono">
-                  <span>{project.researchReferences.length} {language === 'fa' ? 'منبع ثبت شده' : 'References Loaded'}</span>
+                  <span>{researchReferences.length} {language === 'fa' ? 'منبع ثبت شده' : 'References Loaded'}</span>
                   <span>Citation Style: Author-Year (e.g. Crous et al. 2018)</span>
                 </div>
 
                 <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white">
-                  {project.researchReferences.map((ref) => (
+                  {researchReferences.map((ref) => (
                     <div key={ref.id} className="p-4 hover:bg-slate-50/60 transition-colors space-y-2">
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-1">

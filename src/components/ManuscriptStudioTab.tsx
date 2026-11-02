@@ -104,8 +104,8 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
   const currentSection = sections.find((s) => s.key === activeSection)!;
 
   // Filter references relevant to the active section
-  const sectionRefs = project.researchReferences.filter((ref) =>
-    ref.targetSections.includes(activeSection as any)
+  const sectionRefs = (project.researchReferences || []).filter((ref) =>
+    (ref.targetSections || []).includes(activeSection as any)
   );
 
   const handleUpdateText = (value: string) => {
@@ -132,20 +132,20 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
         doiOrUrl: r.doiOrUrl,
         notesOrExcerpts: r.notesOrExcerpts,
       })),
-      allReferences: project.researchReferences.map((r) => `${r.authors} (${r.year}). ${r.title}. ${r.journalOrSource}. ${r.doiOrUrl}`),
+      allReferences: (project.researchReferences || []).map((r) => `${r.authors} (${r.year}). ${r.title}. ${r.journalOrSource}. ${r.doiOrUrl}`),
       contextData: {
         pathogen: project.pathogenName || 'Camarosporomyces flavigenus',
         host: project.hostLatinName || 'Juglans regia',
-        disease: project.diseaseSymptom,
-        lsuLength: project.fastaLSU.replace(/[\r\n\s>]/g, '').length,
-        tub2Length: project.fastaTub2.replace(/[\r\n\s>]/g, '').length,
-        genBankLSU: project.genBankLSU,
-        genBankTub2: project.genBankTub2,
+        disease: project.diseaseSymptom || '',
+        lsuLength: (project.fastaLSU || '').replace(/[\r\n\s>]/g, '').length,
+        tub2Length: (project.fastaTub2 || '').replace(/[\r\n\s>]/g, '').length,
+        genBankLSU: project.genBankLSU || '',
+        genBankTub2: project.genBankTub2 || '',
         primers: { lsu: project.primerLSU, tub2: project.primerTub2 },
-        conidia: project.conidiaStats,
-        colony: project.colonyPDA,
-        isolates: project.isolates,
-        imageAnalyses: project.labImages
+        conidia: project.conidiaStats || {},
+        colony: project.colonyPDA || {},
+        isolates: project.isolates || [],
+        imageAnalyses: (project.labImages || [])
           .filter((img) => img.aiAnalysis)
           .map((img) => `${img.caption}: ${img.aiAnalysis}`),
       },
@@ -263,13 +263,13 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
               {language === 'fa' ? 'داده‌های تجربی:' : 'Lab Measurements:'} LSU:{' '}
               {project.fastaLSU ? 'توالی وارد شده' : 'خالی'} · tub2:{' '}
               {project.fastaTub2 ? 'توالی وارد شده' : 'خالی'} · ابعاد:{' '}
-              {project.conidiaStats.lengthRange || 'خالی'} · تصاویر: {project.labImages.length}
+              {project.conidiaStats?.lengthRange || 'خالی'} · تصاویر: {(project.labImages || []).length}
             </span>
           )}
 
           {activeSection === 'materialsMethods' && (
             <span className="text-slate-300">
-              پرایمرها: {project.primerLSU.forward.slice(0, 4)} / {project.primerTub2.forward.slice(0, 4)} · مراجع روش‌ها:{' '}
+              پرایمرها: {(project.primerLSU?.forward || '').slice(0, 4)} / {(project.primerTub2?.forward || '').slice(0, 4)} · مراجع روش‌ها:{' '}
               {sectionRefs.length} منبع
             </span>
           )}
@@ -282,7 +282,7 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
 
           {activeSection === 'references' && (
             <span className="text-teal-300">
-              {project.researchReferences.length} {language === 'fa' ? 'منبع در کتابخانه آماده قالب‌بندی الفبایی' : 'citations ready for bibliography'}
+              {(project.researchReferences || []).length} {language === 'fa' ? 'منبع در کتابخانه آماده قالب‌بندی الفبایی' : 'citations ready for bibliography'}
             </span>
           )}
         </div>
@@ -474,9 +474,9 @@ export const ManuscriptStudioTab: React.FC<ManuscriptStudioTabProps> = ({
                   </p>
                   <div className="pt-2 flex flex-wrap items-center gap-1.5 text-xs">
                     <span className="font-semibold text-slate-900 font-mono text-[11px]">Keywords:</span>
-                    {project.manuscript.keywords.map((kw, i) => (
+                    {(project.manuscript?.keywords || []).map((kw, i) => (
                       <span key={i} className="text-slate-600 italic">
-                        {kw}{i < project.manuscript.keywords.length - 1 ? ',' : ''}
+                        {kw}{i < (project.manuscript?.keywords || []).length - 1 ? ',' : ''}
                       </span>
                     ))}
                   </div>

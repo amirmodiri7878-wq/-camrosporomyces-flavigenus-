@@ -22,12 +22,29 @@ export default function App() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          ...emptyProjectData,
+          ...parsed,
+          primerLSU: { ...emptyProjectData.primerLSU, ...(parsed.primerLSU || {}) },
+          primerTub2: { ...emptyProjectData.primerTub2, ...(parsed.primerTub2 || {}) },
+          colonyPDA: { ...emptyProjectData.colonyPDA, ...(parsed.colonyPDA || {}) },
+          conidiaStats: { ...emptyProjectData.conidiaStats, ...(parsed.conidiaStats || {}) },
+          manuscript: {
+            ...emptyProjectData.manuscript,
+            ...(parsed.manuscript || {}),
+            keywords: Array.isArray(parsed.manuscript?.keywords)
+              ? parsed.manuscript.keywords
+              : emptyProjectData.manuscript.keywords,
+          },
+          isolates: Array.isArray(parsed.isolates) ? parsed.isolates : [],
+          labImages: Array.isArray(parsed.labImages) ? parsed.labImages : [],
+          researchReferences: Array.isArray(parsed.researchReferences) ? parsed.researchReferences : [],
+        };
       }
     } catch (e) {
       console.warn('Could not load from localStorage', e);
     }
-    // Default to clean blank slate with zero mock data
     return emptyProjectData;
   });
 
@@ -58,7 +75,11 @@ export default function App() {
     }
   };
 
-  const hasData = project.fastaLSU.length > 0 || project.conidiaStats.lengthRange.length > 0 || project.labImages.length > 0;
+  const hasData =
+    Boolean(project.fastaLSU?.trim()) ||
+    Boolean(project.conidiaStats?.lengthRange?.trim()) ||
+    (project.labImages?.length || 0) > 0 ||
+    (project.researchReferences?.length || 0) > 0;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900">
